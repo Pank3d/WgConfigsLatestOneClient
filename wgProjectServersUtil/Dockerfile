@@ -14,8 +14,10 @@ RUN npm ci --omit=dev && mv node_modules /node_modules
 # Stage 2: Создание финального образа
 FROM docker.io/library/node:20-alpine
 
-# Добавляем healthcheck
-HEALTHCHECK CMD /usr/bin/timeout 5s /bin/sh -c "/usr/bin/wg show | /bin/grep -q interface || exit 1" || exit 1
+# Добавляем healthcheck (без timeout, чтобы избежать зомби-процессов)
+# Используем встроенный timeout Docker через --timeout
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD /bin/sh -c "/usr/bin/wg show | /bin/grep -q interface" || exit 1
 
 # Копируем приложение и зависимости
 COPY --from=build_node_modules /app /app

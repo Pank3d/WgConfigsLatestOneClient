@@ -66,6 +66,7 @@ class WireguardService {
 
       console.log("Fetching clients from API");
       const response = await apiClient.get("/api/wireguard/client");
+      console.log(response.data)
 
       // Обновляем кеш
       this.clientsCache = response.data;
