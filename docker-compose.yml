@@ -12,7 +12,6 @@ services:
     cap_add:
       - NET_ADMIN  # Убедитесь, что эти привилегии действительно необходимы
       - SYS_MODULE
-
   next-app:
     build:
       context: ./wgBot  # Убедитесь, что этот путь правильный и содержит Dockerfile
@@ -24,32 +23,3 @@ services:
     ports:
       - "3000:3000"  # Проверьте, что этот порт открыт на хосте
     command: npm start  # Убедитесь, что команда корректна для запуска вашего приложения
-    
-  wg-easy-1:
-    build:
-      context: ./wgProjectServersUtil-1  # Убедитесь, что этот путь правильный и содержит Dockerfile
-      dockerfile: Dockerfile  # Проверьте, что Dockerfile находится здесь
-    command: npm run serve  # Убедитесь, что команда корректна для запуска вашего приложения
-    env_file:
-      - ./wgProjectServersUtil-1/.env
-    ports:
-      - "900:900/udp"  # Проверьте, что этот порт открыт на хосте
-      - "600:600/tcp"  # Проверьте, что этот порт открыт на хосте
-    cap_add:
-      - NET_ADMIN  # Убедитесь, что эти привилегии действительно необходимы
-      - SYS_MODULE
-
-  wg-easy-2:
-    build:
-      context: ./wgProjectServersUtil-2  # Убедитесь, что этот путь правильный и содержит Dockerfile
-      dockerfile: Dockerfile  # Проверьте, что Dockerfile находится здесь
-    command: npm run serve  # Убедитесь, что команда корректна для запуска вашего приложения
-    env_file:
-      - ./wgProjectServersUtil-2/.env
-    ports:
-      - "1000:1000/udp"  # Проверьте, что этот порт открыт на хосте
-      - "700:700/tcp"  # Проверьте, что этот порт открыт на хосте
-    cap_add:
-      - NET_ADMIN  # Убедитесь, что эти привилегии действительно необходимы
-      - SYS_MODULE
-  

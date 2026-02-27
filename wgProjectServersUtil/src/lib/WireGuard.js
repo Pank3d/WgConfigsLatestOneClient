@@ -43,7 +43,7 @@ module.exports = class WireGuard {
         const publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
           log: "echo ***hidden*** | wg pubkey",
         });
-        const address = WG_DEFAULT_ADDRESS.replace("x", "1");
+        const address = WG_DEFAULT_ADDRESS.replace("x", "1").replace("y","3")
 
         config = {
           server: {
@@ -105,7 +105,7 @@ module.exports = class WireGuard {
 # Server
 [Interface]
 PrivateKey = ${config.server.privateKey}
-Address = ${config.server.address}/24
+Address = ${config.server.address}/16
 ListenPort = ${WG_PORT}
 PreUp = ${WG_PRE_UP}
 PostUp = ${WG_POST_UP}
@@ -221,7 +221,7 @@ ${
     return `
 [Interface]
 PrivateKey = ${client.privateKey ? `${client.privateKey}` : "REPLACE_ME"}
-Address = ${client.address}/24
+Address = ${client.address}/16
 ${WG_DEFAULT_DNS ? `DNS = ${WG_DEFAULT_DNS}\n` : ""}\
 ${WG_MTU ? `MTU = ${WG_MTU}\n` : ""}\
 
@@ -257,15 +257,22 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     // Calculate next IP
     let address;
-    for (let i = 2; i < 255; i++) {
-      const client = Object.values(config.clients).find((client) => {
-        return client.address === WG_DEFAULT_ADDRESS.replace("x", i);
-      });
+    for (let x = 0; x < 256; x++) {
+      // Для каждого значения x (10.8.x.y)
+      for (let y = 2; y < 256; y++) {
+        // Для каждого значения y (10.8.x.y)
+        const candidateAddress = `10.8.${x}.${y}`;
+        const client = Object.values(config.clients).find((client) => {
+          return client.address === candidateAddress;
+        });
 
-      if (!client) {
-        address = WG_DEFAULT_ADDRESS.replace("x", i);
-        break;
+        if (!client) {
+          address = candidateAddress;
+          break;
+        }
       }
+
+      if (address) break; // Если адрес найден, выходим из цикла по x
     }
 
     if (!address) {
