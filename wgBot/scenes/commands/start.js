@@ -16,7 +16,7 @@ export async function startCommand(ctx) {
     const isUserSubscribed = await checkSubscription(
       ctx.telegram,
       chanelId,
-      ctx.from.id
+      ctx.from.id,
     );
 
     // Обработчик для кнопки "Я подписался"
@@ -30,7 +30,7 @@ export async function startCommand(ctx) {
         const isSubscribed = await checkSubscription(
           ctx.telegram,
           chanelId,
-          ctx.from.id
+          ctx.from.id,
         );
 
         if (isSubscribed) {
@@ -39,7 +39,7 @@ export async function startCommand(ctx) {
             "Нажмите сделать конфиг",
             Markup.keyboard([["Сделать конфиг"]])
               .oneTime()
-              .resize()
+              .resize(),
           );
           ctx.answerCbQuery();
         } else {
@@ -51,7 +51,7 @@ export async function startCommand(ctx) {
             Markup.inlineKeyboard([
               Markup.button.callback("Я подписался", "check_membership"),
             ]),
-            { parse_mode: "Markdown" }
+            { parse_mode: "Markdown" },
           );
         }
       } catch (error) {
@@ -70,7 +70,7 @@ export async function startCommand(ctx) {
         "Нажмите сделать конфиг",
         Markup.keyboard([["Сделать конфиг"]])
           .oneTime()
-          .resize()
+          .resize(),
       );
     } else {
       await safeReply(
@@ -79,7 +79,7 @@ export async function startCommand(ctx) {
         Markup.inlineKeyboard([
           Markup.button.callback("Я подписался", "check_membership"),
         ]),
-        { parse_mode: "Markdown" }
+        { parse_mode: "Markdown" },
       );
     }
   } catch (error) {
