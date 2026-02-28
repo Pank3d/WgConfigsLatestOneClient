@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  telegramId BigInt  @unique
+  username   String?
+  firstName  String
+  lastName   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  configs    Config[]
+
+  @@map("users")
+}
+
+model Config {
+  id              String   @id @default(uuid())
+  name            String
+  wireguardId     String?  // ID в WireGuard API
+  configData      String?  @db.Text // Сохраненная конфигурация
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("configs")
+  @@index([userId])
+}
