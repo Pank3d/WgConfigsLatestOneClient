@@ -17,17 +17,17 @@
   "license": "ISC",
   "description": "Backend API for WireGuard VPN Telegram Mini App",
   "dependencies": {
-    "@prisma/client": "^7.4.2",
+    "@prisma/client": "^5.22.0",
     "axios": "^1.13.6",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "prisma": "^5.22.0",
     "telegraf": "^4.16.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "prisma": "^7.4.2"
+    "nodemon": "^3.1.14"
   }
 }

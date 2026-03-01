@@ -245,6 +245,21 @@ docker-compose restart backend
 
 ## 🚀 Production деплой
 
+📚 **Полная документация по деплою:**
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Подробная инструкция
+- [QUICKSTART.md](QUICKSTART.md) - Быстрый старт
+
+### Автоматический деплой через CI/CD
+
+Настроен GitHub Actions для автоматического деплоя при push в master. См. [.github/workflows/deploy.yml](.github/workflows/deploy.yml)
+
+### Ручной деплой
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
 ### 1. Настройка сервера
 
 ```bash
