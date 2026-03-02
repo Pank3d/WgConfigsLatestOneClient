@@ -38,8 +38,10 @@ jobs:
             cd /root/WgConfigsLatestOneClient
             git pull origin master
 
-            # Убедиться что postgres и wireguard-api запущены
-            docker compose -f docker-compose.prod.yml up -d postgres wireguard-api
+            # Остановить всё что может занимать порты
+            docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+            systemctl stop nginx 2>/dev/null || true
+            systemctl disable nginx 2>/dev/null || true
 
-            # Пересобрать и перезапустить backend + frontend
-            docker compose -f docker-compose.prod.yml up -d --build --no-deps backend frontend
+            # Поднять всё
+            docker compose -f docker-compose.prod.yml up -d --build
