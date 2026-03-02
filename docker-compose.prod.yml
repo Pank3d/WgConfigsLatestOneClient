@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wireguard-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://postgres:strongpassword123@postgres:5432/wireguard_vpn
+      - WIREGUARD_API_URL=http://wireguard-api:500
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vpn-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wireguard-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - vpn-network
+    restart: unless-stopped
+
+  # База — поднимается один раз, данные в volume
+  postgres:
+    image: postgres:16-alpine
+    container_name: wireguard-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: strongpassword123
+      POSTGRES_DB: wireguard_vpn
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vpn-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # WireGuard API — не пересобирается при деплое
+  wireguard-api:
+    build:
+      context: ./wgProjectServersUtil
+      dockerfile: Dockerfile
+    container_name: wireguard-api
+    command: npm run serve
+    env_file:
+      - ./wgProjectServersUtil/.env
+    ports:
+      - "800:800/udp"
+      - "500:500/tcp"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    networks:
+      - vpn-network
+    restart: unless-stopped
+
+networks:
+  vpn-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

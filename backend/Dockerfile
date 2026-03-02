@@ -17,5 +17,5 @@ COPY src ./src
 
 EXPOSE 3001
 
-# Запускаем миграции и затем сервер
-CMD npx prisma migrate deploy && node src/index.js
+# Применяем схему и запускаем сервер
+CMD npx prisma db push --skip-generate && node src/index.js
