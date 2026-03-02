@@ -8,84 +8,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-backend:
-    name: Deploy Backend
+  deploy:
+    name: Deploy to Server
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: npm ci
-
-      - name: Generate Prisma Client
-        working-directory: ./backend
-        run: npx prisma generate
-
-      - name: Build backend
-        working-directory: ./backend
-        run: npm run build
-
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /root/WgConfigsLatestOneClient
-            git pull origin master
-            cd backend
-            npm ci
-            npx prisma generate
-            npx prisma db push
-            pm2 restart wireguard-backend || pm2 start npm --name "wireguard-backend" -- start
-
-  deploy-frontend:
-    name: Deploy Frontend
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
 
       - name: Build frontend
         working-directory: ./frontend
-        run: npm run build
+        run: |
+          npm ci
+          npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-      - name: Deploy to Server
-        uses: appleboy/scp-action@master
+      - name: Deploy frontend files to server
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           source: "frontend/dist/*"
           target: "/var/www/wireguard-vpn"
           strip_components: 2
 
-      - name: Setup Nginx
-        uses: appleboy/ssh-action@master
+      - name: Deploy backend and restart services
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           script: |
+            cd /root/WgConfigsLatestOneClient
+            git pull origin master
+
+            # Backend
+            cd backend
+            npm ci --production
+            npx prisma generate
+            npx prisma db push --skip-generate
+            pm2 restart wireguard-backend || pm2 start npm --name "wireguard-backend" -- start
+
+            # Nginx
             systemctl reload nginx
