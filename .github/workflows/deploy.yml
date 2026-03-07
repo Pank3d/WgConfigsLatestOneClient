@@ -20,6 +20,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
+            set -e
+
             # Установка Docker если нет
             if ! command -v docker &> /dev/null; then
               curl -fsSL https://get.docker.com | sh
@@ -46,11 +48,14 @@ jobs:
             cd /root/WgConfigsLatestOneClient
             git pull origin master
 
-            # Остановить Docker контейнеры
+            # Остановить nginx чтобы освободить порт 80
+            systemctl stop nginx 2>/dev/null || true
+
+            # Полностью остановить и удалить старые контейнеры
             docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 
-            # Поднять Docker (фронтенд на порту 8080)
-            docker compose -f docker-compose.prod.yml up -d --build
+            # Пересобрать и поднять контейнеры (фронтенд теперь на 8080)
+            docker compose -f docker-compose.prod.yml up -d --build --force-recreate
 
             # Настроить хостовый nginx как reverse proxy
             mkdir -p /var/www/certbot
@@ -60,17 +65,18 @@ jobs:
             rm -f /etc/nginx/sites-enabled/wireguard-vpn
 
             # Запустить nginx
-            nginx -t && systemctl enable nginx && systemctl restart nginx
+            nginx -t
+            systemctl enable nginx
+            systemctl start nginx
 
             # Получить SSL сертификат (только если ещё нет)
             if [ ! -d /etc/letsencrypt/live/wgshoppr.ru ]; then
               certbot --nginx -d wgshoppr.ru -d www.wgshoppr.ru --non-interactive --agree-tos -m ${{ secrets.SSL_EMAIL }}
             else
-              # Обновить сертификат если нужно
               certbot renew --quiet
             fi
 
-            # Добавить автообновление сертификата в cron
+            # Автообновление сертификата в cron
             if ! crontab -l 2>/dev/null | grep -q certbot; then
               (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'systemctl reload nginx'") | crontab -
             fi
