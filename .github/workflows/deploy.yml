@@ -71,7 +71,7 @@ jobs:
 
             # Получить SSL сертификат (только если ещё нет)
             if [ ! -d /etc/letsencrypt/live/wgshoppr.ru ]; then
-              certbot --nginx -d wgshoppr.ru -d www.wgshoppr.ru --non-interactive --agree-tos -m ${{ secrets.SSL_EMAIL }}
+              certbot --nginx -d wgshoppr.ru -d www.wgshoppr.ru --non-interactive --agree-tos -m m.zhilevsky@yandex.ru
             else
               certbot renew --quiet
             fi
