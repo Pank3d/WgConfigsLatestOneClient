@@ -30,6 +30,14 @@ jobs:
               apt-get update && apt-get install -y docker-compose-plugin
             fi
 
+            # Установка nginx и certbot если нет
+            if ! command -v nginx &> /dev/null; then
+              apt-get update && apt-get install -y nginx
+            fi
+            if ! command -v certbot &> /dev/null; then
+              apt-get update && apt-get install -y certbot python3-certbot-nginx
+            fi
+
             # Клонирование или обновление репозитория
             if [ ! -d /root/WgConfigsLatestOneClient/.git ]; then
               git clone https://github.com/${{ github.repository }}.git /root/WgConfigsLatestOneClient
@@ -38,10 +46,31 @@ jobs:
             cd /root/WgConfigsLatestOneClient
             git pull origin master
 
-            # Остановить всё что может занимать порты
+            # Остановить Docker контейнеры
             docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
-            systemctl stop nginx 2>/dev/null || true
-            systemctl disable nginx 2>/dev/null || true
 
-            # Поднять всё
+            # Поднять Docker (фронтенд на порту 8080)
             docker compose -f docker-compose.prod.yml up -d --build
+
+            # Настроить хостовый nginx как reverse proxy
+            mkdir -p /var/www/certbot
+            cp nginx-host.conf /etc/nginx/sites-available/wgshoppr
+            ln -sf /etc/nginx/sites-available/wgshoppr /etc/nginx/sites-enabled/wgshoppr
+            rm -f /etc/nginx/sites-enabled/default
+            rm -f /etc/nginx/sites-enabled/wireguard-vpn
+
+            # Запустить nginx
+            nginx -t && systemctl enable nginx && systemctl restart nginx
+
+            # Получить SSL сертификат (только если ещё нет)
+            if [ ! -d /etc/letsencrypt/live/wgshoppr.ru ]; then
+              certbot --nginx -d wgshoppr.ru -d www.wgshoppr.ru --non-interactive --agree-tos -m ${{ secrets.SSL_EMAIL }}
+            else
+              # Обновить сертификат если нужно
+              certbot renew --quiet
+            fi
+
+            # Добавить автообновление сертификата в cron
+            if ! crontab -l 2>/dev/null | grep -q certbot; then
+              (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'systemctl reload nginx'") | crontab -
+            fi
