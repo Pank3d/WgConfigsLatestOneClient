@@ -83,20 +83,24 @@ jobs:
 
             # Настроить хостовый nginx как reverse proxy
             mkdir -p /var/www/certbot
-            cp nginx-host.conf /etc/nginx/sites-available/wgshoppr
-            ln -sf /etc/nginx/sites-available/wgshoppr /etc/nginx/sites-enabled/wgshoppr
             rm -f /etc/nginx/sites-enabled/default
             rm -f /etc/nginx/sites-enabled/wireguard-vpn
+            ln -sf /etc/nginx/sites-available/wgshoppr /etc/nginx/sites-enabled/wgshoppr
 
-            # Запустить nginx
-            nginx -t
-            systemctl enable nginx
-            systemctl start nginx
-
-            # Получить SSL сертификат (только если ещё нет)
+            # Получить SSL сертификат если ещё нет
             if [ ! -d /etc/letsencrypt/live/wgshoppr.ru ]; then
+              # Первый раз — ставим конфиг без SSL для получения сертификата
+              cp nginx-host-initial.conf /etc/nginx/sites-available/wgshoppr
+              nginx -t
+              systemctl enable nginx
+              systemctl start nginx
               certbot --nginx -d wgshoppr.ru -d www.wgshoppr.ru --non-interactive --agree-tos -m m.zhilevsky@yandex.ru
             else
+              # Сертификат есть — ставим полный конфиг с SSL
+              cp nginx-host.conf /etc/nginx/sites-available/wgshoppr
+              nginx -t
+              systemctl enable nginx
+              systemctl start nginx
               certbot renew --quiet
             fi
 
