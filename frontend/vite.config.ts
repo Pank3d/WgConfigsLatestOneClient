@@ -11,10 +11,15 @@ export default defineConfig({
     },
   },
   server: {
-    host: true, // Listen on all addresses
+    host: true,
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'https://wgshoppr.ru',
+        changeOrigin: true,
+      },
+    },
     allowedHosts: [
-      'subrhombical-exploratively-keely.ngrok-free.dev',
       '.ngrok-free.dev',
       '.ngrok.io',
       '.ngrok-free.app',

@@ -20,4 +20,10 @@ export const config = {
   limits: {
     maxConfigsPerUser: parseInt(process.env.MAX_CONFIGS_PER_USER || '3', 10),
   },
+
+  yookassa: {
+    shopId: process.env.YOOKASSA_SHOP_ID || '',
+    secretKey: process.env.YOOKASSA_SECRET_KEY || '',
+    returnUrl: process.env.YOOKASSA_RETURN_URL || 'https://wgshoppr.ru',
+  },
 };

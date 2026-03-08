@@ -5,6 +5,7 @@ import { ConfigCreator } from '@/features/config-creator';
 import { ConfigList } from '@/features/config-list';
 import { DownloadLinks } from '@/features/download-links';
 import { Instructions } from '@/features/instructions';
+import { PaymentPlans, Paywall } from '@/features/payment';
 
 const tabs = [
   { id: 'configs', label: 'Конфиги' },
@@ -24,7 +25,7 @@ export function HomePage() {
         <h1 className="text-xl font-bold mb-1">WireGuard VPN</h1>
         {user && (
           <p className="text-sm opacity-70">
-            Привет, {user.firstName}! 👋
+            Привет, {user.firstName}!
           </p>
         )}
       </header>
@@ -36,22 +37,14 @@ export function HomePage() {
       />
 
       {activeTab === 'configs' && (
-        <>
+        <Paywall onGoToPayment={() => setActiveTab('payment')}>
           <ConfigCreator />
           <ConfigList />
-        </>
+        </Paywall>
       )}
 
       {activeTab === 'payment' && (
-        <div className="bg-gray-50 rounded-lg p-6 shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Оплата</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Выберите подходящий тариф для продления подписки
-          </p>
-          <div className="text-center py-8 text-gray-500">
-            Функционал оплаты в разработке
-          </div>
-        </div>
+        <PaymentPlans />
       )}
 
       {activeTab === 'instructions' && (

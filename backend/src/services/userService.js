@@ -1,10 +1,9 @@
 import databaseService from './databaseService.js';
 import { config } from '../config/env.js';
+import { getMaxConfigsForUser } from './paymentService.js';
 
 /**
  * Подсчитывает количество конфигов пользователя
- * @param {Object} user - Объект пользователя
- * @returns {Promise<number>} Количество конфигов
  */
 export async function getUserConfigCount(user) {
   try {
@@ -20,13 +19,16 @@ export async function getUserConfigCount(user) {
 
 /**
  * Проверяет, может ли пользователь создать новый конфиг
- * @param {Object} user - Объект пользователя
- * @returns {Promise<boolean>} true если можно создать конфиг
+ * Учитывает подписку и доп. конфиги
  */
 export async function canCreateConfig(user) {
   try {
-    const count = await getUserConfigCount(user);
-    return count < config.limits.maxConfigsPerUser;
+    const dbUser = await databaseService.getUserByTelegramId(user.id);
+    if (!dbUser) return false;
+
+    const count = await databaseService.countUserConfigs(dbUser.id);
+    const maxConfigs = await getMaxConfigsForUser(dbUser.id);
+    return count < maxConfigs;
   } catch (error) {
     console.error('Error checking if user can create config:', error);
     return false;
@@ -35,16 +37,24 @@ export async function canCreateConfig(user) {
 
 /**
  * Возвращает максимальное количество конфигов на пользователя
- * @returns {number}
+ * Учитывает подписку
  */
-export function getMaxConfigsPerUser() {
-  return config.limits.maxConfigsPerUser;
+export async function getMaxConfigsPerUser(telegramUser) {
+  try {
+    if (telegramUser) {
+      const dbUser = await databaseService.getUserByTelegramId(telegramUser.id || telegramUser);
+      if (dbUser) {
+        return await getMaxConfigsForUser(dbUser.id);
+      }
+    }
+    return 0;
+  } catch (error) {
+    return config.limits.maxConfigsPerUser;
+  }
 }
 
 /**
  * Получить или создать пользователя в БД
- * @param {Object} telegramUser - Объект пользователя из Telegram
- * @returns {Promise<Object>} Пользователь из БД
  */
 export async function getOrCreateUser(telegramUser) {
   return await databaseService.findOrCreateUser(telegramUser);

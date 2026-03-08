@@ -1,5 +1,6 @@
 import express from 'express';
 import { validateTelegramWebApp } from '../middleware/telegramAuth.js';
+import { requireSubscription } from '../middleware/subscriptionCheck.js';
 import { createConfigLimiter } from '../middleware/rateLimiter.js';
 import wireguardService from '../services/wireguardService.js';
 import databaseService from '../services/databaseService.js';
@@ -22,7 +23,7 @@ router.get('/', validateTelegramWebApp, async (req, res) => {
     // Получаем конфиги из БД
     const dbConfigs = await databaseService.getUserConfigs(user.id);
     const count = dbConfigs.length;
-    const maxCount = getMaxConfigsPerUser();
+    const maxCount = await getMaxConfigsPerUser(telegramUser);
 
     const configs = dbConfigs.map((config) => ({
       id: config.id,
@@ -46,7 +47,7 @@ router.get('/', validateTelegramWebApp, async (req, res) => {
  * POST /api/configs
  * Создать новый конфиг в WireGuard и сохранить в БД
  */
-router.post('/', validateTelegramWebApp, createConfigLimiter, async (req, res) => {
+router.post('/', validateTelegramWebApp, requireSubscription, createConfigLimiter, async (req, res) => {
   try {
     const telegramUser = req.telegramUser;
     const { name: customName } = req.body;
@@ -58,7 +59,7 @@ router.post('/', validateTelegramWebApp, createConfigLimiter, async (req, res) =
     const canCreate = await canCreateConfig(telegramUser);
     if (!canCreate) {
       const count = await getUserConfigCount(telegramUser);
-      const maxCount = getMaxConfigsPerUser();
+      const maxCount = await getMaxConfigsPerUser(telegramUser);
       return res.status(403).json({
         error: `You have reached the maximum limit of configs (${count}/${maxCount})`,
       });
@@ -117,7 +118,7 @@ router.post('/', validateTelegramWebApp, createConfigLimiter, async (req, res) =
  * GET /api/configs/:id/download
  * Скачать конфиг файл из БД
  */
-router.get('/:id/download', validateTelegramWebApp, async (req, res) => {
+router.get('/:id/download', validateTelegramWebApp, requireSubscription, async (req, res) => {
   try {
     const telegramUser = req.telegramUser;
     const { id } = req.params;

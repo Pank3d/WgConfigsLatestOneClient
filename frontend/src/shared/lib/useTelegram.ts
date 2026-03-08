@@ -62,7 +62,7 @@ export function useTelegram() {
         document.documentElement.classList.add(tg.colorScheme);
       }
     } else {
-      // Development mode - mock data
+      // Если не в Telegram — редирект на бота
       if (import.meta.env.DEV) {
         console.warn('Telegram WebApp not available, using mock data');
         const mockUser = {
@@ -74,6 +74,8 @@ export function useTelegram() {
         setUser(mockUser);
         setInitData('mock_init_data_for_development');
         setIsReady(true);
+      } else {
+        window.location.href = 'https://t.me/WgShopBot';
       }
     }
   }, []);

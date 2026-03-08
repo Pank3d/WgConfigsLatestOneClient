@@ -108,6 +108,99 @@ class DatabaseService {
       where: { userId },
     });
   }
+
+  // === Subscription methods ===
+
+  /**
+   * Получить активную подписку пользователя
+   */
+  async getActiveSubscription(userId) {
+    return await prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        endDate: { gt: new Date() },
+      },
+      orderBy: { endDate: 'desc' },
+    });
+  }
+
+  /**
+   * Создать подписку
+   */
+  async createSubscription(userId, plan, endDate, maxConfigs = 3, extraConfigs = 0) {
+    return await prisma.subscription.create({
+      data: {
+        userId,
+        plan,
+        status: 'ACTIVE',
+        endDate,
+        maxConfigs,
+        extraConfigs,
+      },
+    });
+  }
+
+  /**
+   * Обновить подписку
+   */
+  async updateSubscription(subscriptionId, data) {
+    return await prisma.subscription.update({
+      where: { id: subscriptionId },
+      data,
+    });
+  }
+
+  /**
+   * Пометить просроченные подписки
+   */
+  async expireSubscriptions() {
+    return await prisma.subscription.updateMany({
+      where: {
+        status: 'ACTIVE',
+        endDate: { lte: new Date() },
+      },
+      data: { status: 'EXPIRED' },
+    });
+  }
+
+  // === Payment methods ===
+
+  /**
+   * Создать запись о платеже
+   */
+  async createPayment(data) {
+    return await prisma.payment.create({ data });
+  }
+
+  /**
+   * Найти платёж по ID ЮКассы
+   */
+  async getPaymentByYookassaId(yookassaPaymentId) {
+    return await prisma.payment.findUnique({
+      where: { yookassaPaymentId },
+    });
+  }
+
+  /**
+   * Обновить статус платежа
+   */
+  async updatePaymentStatus(yookassaPaymentId, status) {
+    return await prisma.payment.update({
+      where: { yookassaPaymentId },
+      data: { status },
+    });
+  }
+
+  /**
+   * Получить историю платежей пользователя
+   */
+  async getUserPayments(userId) {
+    return await prisma.payment.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
 
 export default new DatabaseService();

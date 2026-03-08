@@ -16,9 +16,74 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  configs    Config[]
+  configs       Config[]
+  subscriptions Subscription[]
+  payments      Payment[]
 
   @@map("users")
+}
+
+enum SubscriptionPlan {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  CANCELLED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  EXTRA_CONFIG
+}
+
+model Subscription {
+  id           String             @id @default(uuid())
+  userId       Int
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         SubscriptionPlan
+  status       SubscriptionStatus @default(ACTIVE)
+  startDate    DateTime           @default(now())
+  endDate      DateTime
+  maxConfigs   Int                @default(3)
+  extraConfigs Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  payments     Payment[]
+
+  @@map("subscriptions")
+  @@index([userId])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId    String?
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
+  yookassaPaymentId String        @unique
+  amount            Float
+  currency          String        @default("RUB")
+  status            PaymentStatus @default(PENDING)
+  type              PaymentType
+  plan              SubscriptionPlan?
+  description       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("payments")
+  @@index([userId])
+  @@index([yookassaPaymentId])
 }
 
 model Config {

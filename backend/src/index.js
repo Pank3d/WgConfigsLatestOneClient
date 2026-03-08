@@ -36,12 +36,14 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import configsRoutes from './routes/configs.js';
 import webhookRoutes, { setupWebhook } from './routes/webhook.js';
+import paymentsRoutes from './routes/payments.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/configs', configsRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Error handler (должен быть последним)
 app.use(errorHandler);
