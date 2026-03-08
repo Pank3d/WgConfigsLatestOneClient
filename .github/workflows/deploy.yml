@@ -58,20 +58,18 @@ jobs:
             git pull origin master
 
             # Генерация backend/.env из GitHub Secrets
-            cat > backend/.env <<EOF
-NODE_ENV=production
-PORT=3001
-DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/wireguard_vpn
-BOT_TOKEN=${BOT_TOKEN}
-CHANNEL_ID=${CHANNEL_ID}
-WIREGUARD_API_URL=http://wireguard-api:500
-WEBHOOK_URL=${WEBHOOK_URL}
-WEBHOOK_SECRET=${WEBHOOK_SECRET}
-MAX_CONFIGS_PER_USER=3
-YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID}
-YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY}
-YOOKASSA_RETURN_URL=${WEBHOOK_URL}
-EOF
+            echo "NODE_ENV=production" > backend/.env
+            echo "PORT=3001" >> backend/.env
+            echo "DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/wireguard_vpn" >> backend/.env
+            echo "BOT_TOKEN=${BOT_TOKEN}" >> backend/.env
+            echo "CHANNEL_ID=${CHANNEL_ID}" >> backend/.env
+            echo "WIREGUARD_API_URL=http://wireguard-api:500" >> backend/.env
+            echo "WEBHOOK_URL=${WEBHOOK_URL}" >> backend/.env
+            echo "WEBHOOK_SECRET=${WEBHOOK_SECRET}" >> backend/.env
+            echo "MAX_CONFIGS_PER_USER=3" >> backend/.env
+            echo "YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID}" >> backend/.env
+            echo "YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY}" >> backend/.env
+            echo "YOOKASSA_RETURN_URL=${WEBHOOK_URL}" >> backend/.env
 
             # Остановить nginx чтобы освободить порт 80
             systemctl stop nginx 2>/dev/null || true
