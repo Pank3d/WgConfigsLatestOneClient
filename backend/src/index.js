@@ -6,6 +6,9 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
 
+// Trust proxy (за Nginx)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',

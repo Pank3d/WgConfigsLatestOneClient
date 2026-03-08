@@ -8,11 +8,6 @@ services:
     container_name: wireguard-backend
     env_file:
       - ./backend/.env
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - DATABASE_URL=postgresql://postgres:strongpassword123@postgres:5432/wireguard_vpn
-      - WIREGUARD_API_URL=http://wireguard-api:500
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,7 +34,7 @@ services:
     container_name: wireguard-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: strongpassword123
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-strongpassword123}
       POSTGRES_DB: wireguard_vpn
     volumes:
       - postgres_data:/var/lib/postgresql/data
