@@ -93,7 +93,8 @@ class XrayService {
   }
 
   /**
-   * Загружает настройки inbound и извлекает Reality publicKey и shortId
+   * Загружает настройки inbound и извлекает Reality publicKey и shortId.
+   * Если inbound не найден — создаёт его автоматически.
    */
   async loadInboundSettings() {
     const result = await this.request('get', '/panel/api/inbounds/list');
@@ -102,9 +103,11 @@ class XrayService {
       throw new Error('Failed to fetch inbounds from 3x-ui');
     }
 
-    const inbound = result.obj.find((ib) => ib.id === config.xray.inboundId);
+    let inbound = result.obj.find((ib) => ib.id === config.xray.inboundId);
+
     if (!inbound) {
-      throw new Error(`Inbound with id ${config.xray.inboundId} not found`);
+      console.log('[XrayService] Inbound not found, creating VLESS+Reality inbound...');
+      inbound = await this.createInbound();
     }
 
     // streamSettings содержит Reality настройки
@@ -112,7 +115,6 @@ class XrayService {
     const realitySettings = streamSettings?.realitySettings;
 
     if (realitySettings) {
-      // privateKey хранится на сервере, publicKey доступен в settings
       const settings = realitySettings.settings || {};
       this.realityPublicKey = settings.publicKey || realitySettings.publicKey || '';
       this.realityShortId = (realitySettings.shortIds && realitySettings.shortIds[0]) || '';
@@ -120,6 +122,90 @@ class XrayService {
       console.log(`[XrayService] Reality shortId: ${this.realityShortId}`);
     } else {
       console.warn('[XrayService] No Reality settings found in inbound');
+    }
+
+    return inbound;
+  }
+
+  /**
+   * Создаёт VLESS+Reality inbound в 3x-ui
+   */
+  async createInbound() {
+    const { serverPort, realitySni } = config.xray;
+
+    const inboundData = {
+      up: 0,
+      down: 0,
+      total: 0,
+      remark: 'AntiGlusch VLESS Reality',
+      enable: true,
+      expiryTime: 0,
+      listen: '',
+      port: serverPort,
+      protocol: 'vless',
+      settings: JSON.stringify({
+        clients: [],
+        decryption: 'none',
+        fallbacks: [],
+      }),
+      streamSettings: JSON.stringify({
+        network: 'tcp',
+        security: 'reality',
+        realitySettings: {
+          show: false,
+          xver: 0,
+          dest: `${realitySni}:443`,
+          serverNames: [realitySni],
+          privateKey: '',
+          minClient: '',
+          maxClient: '',
+          maxTimediff: 0,
+          shortIds: [''],
+          settings: {
+            publicKey: '',
+            fingerprint: config.xray.realityFingerprint,
+            serverName: '',
+            spiderX: '/',
+          },
+        },
+        tcpSettings: {
+          acceptProxyProtocol: false,
+          header: { type: 'none' },
+        },
+      }),
+      sniffing: JSON.stringify({
+        enabled: true,
+        destOverride: ['http', 'tls', 'quic', 'fakedns'],
+        metadataOnly: false,
+        routeOnly: false,
+      }),
+      allocate: JSON.stringify({
+        strategy: 'always',
+        refresh: 5,
+        concurrency: 3,
+      }),
+    };
+
+    const result = await this.request('post', '/panel/api/inbounds/add', inboundData);
+
+    if (!result || result.success === false) {
+      throw new Error(`Failed to create inbound: ${result?.msg || 'unknown error'}`);
+    }
+
+    console.log('[XrayService] Inbound created successfully');
+
+    // Перечитаем inbound чтобы получить сгенерированные ключи
+    const refreshed = await this.request('get', '/panel/api/inbounds/list');
+    const inbound = refreshed.obj.find((ib) => ib.remark === 'AntiGlusch VLESS Reality');
+
+    if (!inbound) {
+      throw new Error('Created inbound not found in list');
+    }
+
+    // Обновляем inboundId в конфиге если он отличается
+    if (inbound.id !== config.xray.inboundId) {
+      console.log(`[XrayService] Inbound created with id=${inbound.id}, updating config`);
+      config.xray.inboundId = inbound.id;
     }
 
     return inbound;
