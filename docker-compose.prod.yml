@@ -76,7 +76,7 @@ services:
       - xray_data:/etc/x-ui
     ports:
       - "8443:8443"
-      - "9090:9090"
+      - "2053:2053"
     networks:
       - vpn-network
     restart: unless-stopped

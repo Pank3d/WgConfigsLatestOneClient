@@ -32,7 +32,7 @@ export const config = {
   },
 
   xray: {
-    panelUrl: process.env.XRAY_PANEL_URL || 'http://xray-panel:9090',
+    panelUrl: process.env.XRAY_PANEL_URL || 'http://xray-panel:2053',
     panelUsername: process.env.XRAY_PANEL_USERNAME || 'admin',
     panelPassword: process.env.XRAY_PANEL_PASSWORD || 'admin',
     inboundId: 1,
