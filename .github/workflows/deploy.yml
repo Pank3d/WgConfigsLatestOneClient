@@ -72,7 +72,7 @@ jobs:
             echo "YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID}" >> backend/.env
             echo "YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY}" >> backend/.env
             echo "YOOKASSA_RETURN_URL=${WEBHOOK_URL}" >> backend/.env
-            echo "XRAY_PANEL_URL=http://xray-panel:9090" >> backend/.env
+            echo "XRAY_PANEL_URL=http://xray-panel:2053" >> backend/.env
             echo "XRAY_PANEL_USERNAME=${XRAY_PANEL_USERNAME}" >> backend/.env
             echo "XRAY_PANEL_PASSWORD=${XRAY_PANEL_PASSWORD}" >> backend/.env
 
