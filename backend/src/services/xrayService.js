@@ -24,12 +24,21 @@ class XrayService {
         password: config.xray.panelPassword,
       });
 
-      const cookies = response.headers['set-cookie'];
-      if (cookies) {
-        this.sessionCookie = cookies.map((c) => c.split(';')[0]).join('; ');
+      // 3x-ui возвращает set-cookie в разных форматах
+      const setCookie = response.headers['set-cookie'];
+      if (setCookie && setCookie.length > 0) {
+        this.sessionCookie = setCookie.map((c) => c.split(';')[0]).join('; ');
       }
 
-      console.log('[XrayService] Logged in to 3x-ui panel');
+      // Если set-cookie пустой, пробуем взять из response data (некоторые версии 3x-ui)
+      if (!this.sessionCookie) {
+        // Попробуем получить через jar или из raw headers
+        const rawHeaders = response.headers;
+        console.log('[XrayService] Response headers:', JSON.stringify(rawHeaders));
+      }
+
+      console.log(`[XrayService] Logged in to 3x-ui panel, cookie: ${this.sessionCookie ? this.sessionCookie.substring(0, 30) + '...' : 'NULL'}`);
+      console.log(`[XrayService] Login response success: ${response.data?.success}`);
       return response.data;
     } catch (error) {
       console.error('[XrayService] Login failed:', error.message);
@@ -52,12 +61,17 @@ class XrayService {
   async request(method, url, data) {
     await this.ensureSession();
 
+    const headers = {};
+    if (this.sessionCookie) {
+      headers.Cookie = this.sessionCookie;
+    }
+
     try {
       const response = await this.client({
         method,
         url,
         data,
-        headers: { Cookie: this.sessionCookie },
+        headers,
       });
 
       if (response.data && response.data.success === false) {
@@ -77,14 +91,21 @@ class XrayService {
 
       return response.data;
     } catch (error) {
-      if (error.response && error.response.status === 401) {
+      // 3x-ui возвращает 404 (не 401) когда нет валидной сессии
+      const status = error.response?.status;
+      if (status === 401 || status === 404) {
+        console.log(`[XrayService] Got ${status} on ${url}, re-logging in...`);
         this.sessionCookie = null;
-        await this.ensureSession();
+        await this.login();
+        const retryHeaders = {};
+        if (this.sessionCookie) {
+          retryHeaders.Cookie = this.sessionCookie;
+        }
         const retry = await this.client({
           method,
           url,
           data,
-          headers: { Cookie: this.sessionCookie },
+          headers: retryHeaders,
         });
         return retry.data;
       }
