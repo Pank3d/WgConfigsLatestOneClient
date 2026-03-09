@@ -23,11 +23,10 @@ export function PaymentPlans() {
   const { data: subscription } = useSubscriptionQuery();
   const { data: plansData, isLoading } = usePlansQuery();
   const createPayment = useCreatePaymentMutation();
-
-  if (isLoading) return null;
-
   const createExtraConfig = useCreateExtraConfigPaymentMutation();
   const createExtraAntiglusch = useCreateExtraAntigluschConfigPaymentMutation();
+
+  if (isLoading) return null;
 
   const plans = plansData?.plans || [];
   const extraConfigPrice = plansData?.extraConfigPrice || 50;

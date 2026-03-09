@@ -71,6 +71,9 @@ router.post('/', validateTelegramWebApp, subscriptionMiddleware, createConfigLim
     const email = `${identifier}_ag_${Date.now()}`;
     const configName = customName || email;
 
+    // Гарантируем загрузку Reality ключей
+    await xrayService.ensureRealityKeys();
+
     // Создаём клиента в 3x-ui
     const { uuid } = await xrayService.createClient(email);
 
@@ -115,7 +118,11 @@ router.get('/:id/link', validateTelegramWebApp, subscriptionMiddleware, async (r
       return res.status(404).json({ error: 'Config not found' });
     }
 
-    res.json({ link: config.configData });
+    // Всегда пересобираем URL с актуальными Reality ключами
+    await xrayService.ensureRealityKeys();
+    const freshLink = xrayService.generateVlessUrl(config.xrayClientId, config.name);
+
+    res.json({ link: freshLink });
   } catch (error) {
     console.error('Error in GET /antiglusch/:id/link:', error);
     res.status(500).json({ error: 'Failed to get link' });

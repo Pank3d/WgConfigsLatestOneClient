@@ -1,4 +1,5 @@
 import axios from 'axios';
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/env.js';
 
@@ -139,6 +140,30 @@ class XrayService {
       const settings = realitySettings.settings || {};
       this.realityPublicKey = settings.publicKey || realitySettings.publicKey || '';
       this.realityShortId = (realitySettings.shortIds && realitySettings.shortIds[0]) || '';
+
+      // Если ключи пустые — генерируем и обновляем inbound
+      if (!this.realityPublicKey || !this.realityShortId || !realitySettings.privateKey) {
+        console.log('[XrayService] Reality keys missing, generating and updating inbound...');
+        const { publicKey, privateKey } = this.generateX25519Keypair();
+        const shortId = this.generateShortId();
+
+        realitySettings.privateKey = privateKey;
+        realitySettings.shortIds = [shortId];
+        if (!realitySettings.settings) realitySettings.settings = {};
+        realitySettings.settings.publicKey = publicKey;
+
+        streamSettings.realitySettings = realitySettings;
+
+        await this.request('post', `/panel/api/inbounds/update/${inbound.id}`, {
+          ...inbound,
+          streamSettings: JSON.stringify(streamSettings),
+        });
+
+        this.realityPublicKey = publicKey;
+        this.realityShortId = shortId;
+        console.log(`[XrayService] Updated inbound with new Reality keys`);
+      }
+
       console.log(`[XrayService] Reality publicKey: ${this.realityPublicKey.substring(0, 10)}...`);
       console.log(`[XrayService] Reality shortId: ${this.realityShortId}`);
     } else {
@@ -149,10 +174,41 @@ class XrayService {
   }
 
   /**
+   * Генерирует x25519 keypair для Reality
+   */
+  generateX25519Keypair() {
+    const keyPair = crypto.generateKeyPairSync('x25519', {
+      publicKeyEncoding: { type: 'spki', format: 'der' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+    });
+    // x25519 DER public key: последние 32 байта
+    const publicKeyRaw = keyPair.publicKey.slice(-32);
+    // x25519 DER private key: последние 32 байта
+    const privateKeyRaw = keyPair.privateKey.slice(-32);
+    return {
+      publicKey: publicKeyRaw.toString('base64url'),
+      privateKey: privateKeyRaw.toString('base64url'),
+    };
+  }
+
+  /**
+   * Генерирует случайный shortId (hex, 6-12 символов)
+   */
+  generateShortId() {
+    return crypto.randomBytes(6).toString('hex');
+  }
+
+  /**
    * Создаёт VLESS+Reality inbound в 3x-ui
    */
   async createInbound() {
     const { serverPort, realitySni } = config.xray;
+
+    // Генерируем Reality ключи
+    const { publicKey, privateKey } = this.generateX25519Keypair();
+    const shortId = this.generateShortId();
+
+    console.log(`[XrayService] Generated Reality keys: pbk=${publicKey.substring(0, 10)}..., sid=${shortId}`);
 
     const inboundData = {
       up: 0,
@@ -177,13 +233,13 @@ class XrayService {
           xver: 0,
           dest: `${realitySni}:443`,
           serverNames: [realitySni],
-          privateKey: '',
+          privateKey,
           minClient: '',
           maxClient: '',
           maxTimediff: 0,
-          shortIds: [''],
+          shortIds: [shortId],
           settings: {
-            publicKey: '',
+            publicKey,
             fingerprint: config.xray.realityFingerprint,
             serverName: '',
             spiderX: '/',
@@ -277,6 +333,19 @@ class XrayService {
 
     console.log(`[XrayService] Created client ${email} with UUID ${uuid}`);
     return { uuid, email };
+  }
+
+  /**
+   * Гарантирует загрузку Reality ключей
+   */
+  async ensureRealityKeys() {
+    if (!this.realityPublicKey || !this.realityShortId) {
+      console.log('[XrayService] Reality keys not loaded, loading inbound settings...');
+      await this.loadInboundSettings();
+    }
+    if (!this.realityPublicKey || !this.realityShortId) {
+      throw new Error('Reality keys are still empty after loading inbound settings');
+    }
   }
 
   /**
