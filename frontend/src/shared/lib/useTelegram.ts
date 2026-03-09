@@ -48,12 +48,12 @@ export function useTelegram() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
 
-    if (tg) {
+    if (tg && tg.initDataUnsafe?.user) {
       tg.ready();
       tg.expand();
 
       setWebApp(tg);
-      setUser(tg.initDataUnsafe?.user || null);
+      setUser(tg.initDataUnsafe.user);
       setInitData(tg.initData || '');
       setIsReady(true);
 
@@ -61,22 +61,20 @@ export function useTelegram() {
       if (tg.colorScheme) {
         document.documentElement.classList.add(tg.colorScheme);
       }
+    } else if (import.meta.env.DEV) {
+      console.warn('Telegram WebApp not available, using mock data');
+      const mockUser = {
+        id: 123456789,
+        first_name: 'Test',
+        last_name: 'User',
+        username: 'testuser',
+      };
+      setUser(mockUser);
+      setInitData('mock_init_data_for_development');
+      setIsReady(true);
     } else {
-      // Если не в Telegram — редирект на бота
-      if (import.meta.env.DEV) {
-        console.warn('Telegram WebApp not available, using mock data');
-        const mockUser = {
-          id: 123456789,
-          first_name: 'Test',
-          last_name: 'User',
-          username: 'testuser',
-        };
-        setUser(mockUser);
-        setInitData('mock_init_data_for_development');
-        setIsReady(true);
-      } else {
-        window.location.href = 'https://t.me/WgShopBot';
-      }
+      // Не из Telegram — isReady = true, но user = null
+      setIsReady(true);
     }
   }, []);
 

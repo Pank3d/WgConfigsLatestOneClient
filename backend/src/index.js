@@ -40,6 +40,7 @@ import userRoutes from './routes/user.js';
 import configsRoutes from './routes/configs.js';
 import webhookRoutes, { setupWebhook } from './routes/webhook.js';
 import paymentsRoutes from './routes/payments.js';
+import { startSubscriptionCron } from './services/subscriptionCron.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -63,6 +64,9 @@ app.listen(config.port, async () => {
 
   // Setup webhook for Telegram
   await setupWebhook();
+
+  // Запуск cron-задачи проверки подписок
+  startSubscriptionCron();
 });
 
 export default app;

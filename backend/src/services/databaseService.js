@@ -164,6 +164,19 @@ class DatabaseService {
     });
   }
 
+  /**
+   * Получить подписки которые истекли но ещё в статусе ACTIVE
+   * (для cron-задачи отключения конфигов)
+   */
+  async getNewlyExpiredSubscriptions() {
+    return await prisma.subscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        endDate: { lte: new Date() },
+      },
+    });
+  }
+
   // === Payment methods ===
 
   /**

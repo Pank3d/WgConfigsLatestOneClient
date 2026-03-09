@@ -22,11 +22,9 @@ export function HomePage() {
   return (
     <div className="container mx-auto px-3 py-4 max-w-2xl">
       <header className="mb-4">
-        <h1 className="text-xl font-bold mb-1">WireGuard VPN</h1>
+        <h1 className="text-xl font-bold mb-1">Wgshoppr.ru</h1>
         {user && (
-          <p className="text-sm opacity-70">
-            Привет, {user.firstName}!
-          </p>
+          <p className="text-sm opacity-70">Привет, {user.firstName}!</p>
         )}
       </header>
 
@@ -36,18 +34,16 @@ export function HomePage() {
         onChange={(tabId) => setActiveTab(tabId as TabId)}
       />
 
-      {activeTab === 'configs' && (
-        <Paywall onGoToPayment={() => setActiveTab('payment')}>
+      {activeTab === "configs" && (
+        <Paywall onGoToPayment={() => setActiveTab("payment")}>
           <ConfigCreator />
           <ConfigList />
         </Paywall>
       )}
 
-      {activeTab === 'payment' && (
-        <PaymentPlans />
-      )}
+      {activeTab === "payment" && <PaymentPlans />}
 
-      {activeTab === 'instructions' && (
+      {activeTab === "instructions" && (
         <>
           <DownloadLinks />
           <Instructions />
