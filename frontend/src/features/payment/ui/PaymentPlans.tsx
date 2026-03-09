@@ -9,7 +9,7 @@ const PLAN_BADGES: Record<string, string> = {
 
 const PLAN_DESCRIPTIONS: Record<string, string> = {
   MONTHLY: '150₽ / месяц',
-  QUARTERLY: '167₽ / месяц',
+  QUARTERLY: '130₽ / месяц',
   YEARLY: '125₽ / месяц',
 };
 

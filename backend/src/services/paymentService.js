@@ -12,7 +12,7 @@ export const PLANS = {
   QUARTERLY: {
     id: 'QUARTERLY',
     name: '3 месяца',
-    price: 500,
+    price: 400,
     duration: 3,
     configs: 3,
   },
