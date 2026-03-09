@@ -40,7 +40,9 @@ import userRoutes from './routes/user.js';
 import configsRoutes from './routes/configs.js';
 import webhookRoutes, { setupWebhook } from './routes/webhook.js';
 import paymentsRoutes from './routes/payments.js';
+import antigluschRoutes from './routes/antiglusch.js';
 import { startSubscriptionCron } from './services/subscriptionCron.js';
+import xrayService from './services/xrayService.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -48,6 +50,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/configs', configsRoutes);
 app.use('/api/webhook', webhookRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/antiglusch', antigluschRoutes);
 
 // Error handler (должен быть последним)
 app.use(errorHandler);
@@ -64,6 +67,9 @@ app.listen(config.port, async () => {
 
   // Setup webhook for Telegram
   await setupWebhook();
+
+  // Инициализация 3x-ui (xray) сервиса
+  await xrayService.initialize();
 
   // Запуск cron-задачи проверки подписок
   startSubscriptionCron();

@@ -14,11 +14,14 @@ export interface SubscriptionInfo {
   endDate: string | null;
   maxConfigs: number;
   extraConfigs: number;
+  maxAntigluschConfigs: number;
+  extraAntigluschConfigs: number;
 }
 
 export interface PlansResponse {
   plans: Plan[];
   extraConfigPrice: number;
+  extraAntigluschConfigPrice: number;
 }
 
 export interface CreatePaymentResponse {

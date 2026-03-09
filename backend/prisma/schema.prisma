@@ -16,9 +16,10 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  configs       Config[]
-  subscriptions Subscription[]
-  payments      Payment[]
+  configs            Config[]
+  antigluschConfigs  AntigluschConfig[]
+  subscriptions      Subscription[]
+  payments           Payment[]
 
   @@map("users")
 }
@@ -44,6 +45,7 @@ enum PaymentStatus {
 enum PaymentType {
   SUBSCRIPTION
   EXTRA_CONFIG
+  EXTRA_ANTIGLUSCH_CONFIG
 }
 
 model Subscription {
@@ -54,8 +56,10 @@ model Subscription {
   status       SubscriptionStatus @default(ACTIVE)
   startDate    DateTime           @default(now())
   endDate      DateTime
-  maxConfigs   Int                @default(3)
-  extraConfigs Int                @default(0)
+  maxConfigs             Int    @default(3)
+  extraConfigs           Int    @default(0)
+  maxAntigluschConfigs   Int    @default(1)
+  extraAntigluschConfigs Int    @default(0)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -99,5 +103,22 @@ model Config {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("configs")
+  @@index([userId])
+}
+
+model AntigluschConfig {
+  id            String   @id @default(uuid())
+  name          String
+  xrayClientId  String?
+  xrayEmail     String?
+  configData    String?  @db.Text
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("antiglusch_configs")
   @@index([userId])
 }

@@ -1,6 +1,6 @@
 import databaseService from './databaseService.js';
 import { config } from '../config/env.js';
-import { getMaxConfigsForUser } from './paymentService.js';
+import { getMaxConfigsForUser, getMaxAntigluschConfigsForUser } from './paymentService.js';
 
 /**
  * Подсчитывает количество конфигов пользователя
@@ -50,6 +50,53 @@ export async function getMaxConfigsPerUser(telegramUser) {
     return 0;
   } catch (error) {
     return config.limits.maxConfigsPerUser;
+  }
+}
+
+/**
+ * Подсчитывает количество AntiGlusch конфигов пользователя
+ */
+export async function getUserAntigluschConfigCount(user) {
+  try {
+    const dbUser = await databaseService.getUserByTelegramId(user.id);
+    if (!dbUser) return 0;
+    return await databaseService.countUserAntigluschConfigs(dbUser.id);
+  } catch (error) {
+    console.error('Error counting user antiglusch configs:', error);
+    return 0;
+  }
+}
+
+/**
+ * Проверяет, может ли пользователь создать новый AntiGlusch конфиг
+ */
+export async function canCreateAntigluschConfig(user) {
+  try {
+    const dbUser = await databaseService.getUserByTelegramId(user.id);
+    if (!dbUser) return false;
+    const count = await databaseService.countUserAntigluschConfigs(dbUser.id);
+    const maxConfigs = await getMaxAntigluschConfigsForUser(dbUser.id);
+    return count < maxConfigs;
+  } catch (error) {
+    console.error('Error checking if user can create antiglusch config:', error);
+    return false;
+  }
+}
+
+/**
+ * Возвращает максимальное количество AntiGlusch конфигов
+ */
+export async function getMaxAntigluschConfigsPerUser(telegramUser) {
+  try {
+    if (telegramUser) {
+      const dbUser = await databaseService.getUserByTelegramId(telegramUser.id || telegramUser);
+      if (dbUser) {
+        return await getMaxAntigluschConfigsForUser(dbUser.id);
+      }
+    }
+    return 0;
+  } catch (error) {
+    return 0;
   }
 }
 

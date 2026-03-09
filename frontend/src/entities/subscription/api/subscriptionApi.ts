@@ -26,4 +26,11 @@ export const subscriptionApi = {
     });
     return response.data;
   },
+
+  createExtraAntigluschConfigPayment: async (): Promise<CreatePaymentResponse> => {
+    const response = await api.post<CreatePaymentResponse>('/payments/create', {
+      type: 'EXTRA_ANTIGLUSCH_CONFIG',
+    });
+    return response.data;
+  },
 };

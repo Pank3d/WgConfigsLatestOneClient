@@ -6,14 +6,17 @@ import { ConfigList } from '@/features/config-list';
 import { DownloadLinks } from '@/features/download-links';
 import { Instructions } from '@/features/instructions';
 import { PaymentPlans, Paywall } from '@/features/payment';
+import { AntigluschCreator } from '@/features/antiglusch-creator';
+import { AntigluschList } from '@/features/antiglusch-list';
 
 const tabs = [
-  { id: 'configs', label: 'Конфиги' },
+  { id: 'configs', label: 'WireGuard' },
+  { id: 'antiglusch', label: 'AntiGlusch' },
   { id: 'payment', label: 'Оплата' },
   { id: 'instructions', label: 'Инструкция' },
 ];
 
-type TabId = 'configs' | 'payment' | 'instructions';
+type TabId = 'configs' | 'antiglusch' | 'payment' | 'instructions';
 
 export function HomePage() {
   const [activeTab, setActiveTab] = useState<TabId>('configs');
@@ -39,6 +42,13 @@ export function HomePage() {
           <ConfigCreator />
           <ConfigList />
         </Paywall>
+      )}
+
+      {activeTab === "antiglusch" && (
+        <>
+          <AntigluschCreator />
+          <AntigluschList />
+        </>
       )}
 
       {activeTab === "payment" && <PaymentPlans />}

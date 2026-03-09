@@ -68,6 +68,19 @@ services:
       - vpn-network
     restart: unless-stopped
 
+  # 3x-ui панель для VLESS + Reality (AntiGlusch)
+  xray-panel:
+    image: ghcr.io/mhsanaei/3x-ui:latest
+    container_name: xray-panel
+    volumes:
+      - xray_data:/etc/x-ui
+    ports:
+      - "8443:8443"
+      - "9090:9090"
+    networks:
+      - vpn-network
+    restart: unless-stopped
+
 networks:
   vpn-network:
     driver: bridge
@@ -75,3 +88,4 @@ networks:
 volumes:
   postgres_data:
   wireguard_data:
+  xray_data:

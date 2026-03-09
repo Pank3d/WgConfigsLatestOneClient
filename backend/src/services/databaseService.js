@@ -214,6 +214,53 @@ class DatabaseService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // === AntigluschConfig methods ===
+
+  async createAntigluschConfig(userId, name, xrayClientId, xrayEmail, configData) {
+    return await prisma.antigluschConfig.create({
+      data: { name, xrayClientId, xrayEmail, configData, userId },
+    });
+  }
+
+  async getUserAntigluschConfigs(userId) {
+    return await prisma.antigluschConfig.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getAntigluschConfigById(configId) {
+    return await prisma.antigluschConfig.findUnique({
+      where: { id: configId },
+    });
+  }
+
+  async deleteAntigluschConfig(configId) {
+    return await prisma.antigluschConfig.delete({
+      where: { id: configId },
+    });
+  }
+
+  async disableAntigluschConfig(configId) {
+    return await prisma.antigluschConfig.update({
+      where: { id: configId },
+      data: { enabled: false },
+    });
+  }
+
+  async disableAllUserAntigluschConfigs(userId) {
+    return await prisma.antigluschConfig.updateMany({
+      where: { userId },
+      data: { enabled: false },
+    });
+  }
+
+  async countUserAntigluschConfigs(userId) {
+    return await prisma.antigluschConfig.count({
+      where: { userId },
+    });
+  }
 }
 
 export default new DatabaseService();

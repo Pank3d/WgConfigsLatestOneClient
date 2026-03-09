@@ -1,5 +1,11 @@
 import { Button, Card } from '@/shared/ui';
-import { useSubscriptionQuery, usePlansQuery, useCreatePaymentMutation } from '@/entities/subscription';
+import {
+  useSubscriptionQuery,
+  usePlansQuery,
+  useCreatePaymentMutation,
+  useCreateExtraConfigPaymentMutation,
+  useCreateExtraAntigluschConfigPaymentMutation,
+} from '@/entities/subscription';
 import type { SubscriptionPlan } from '@/entities/subscription';
 
 const PLAN_BADGES: Record<string, string> = {
@@ -20,8 +26,12 @@ export function PaymentPlans() {
 
   if (isLoading) return null;
 
+  const createExtraConfig = useCreateExtraConfigPaymentMutation();
+  const createExtraAntiglusch = useCreateExtraAntigluschConfigPaymentMutation();
+
   const plans = plansData?.plans || [];
   const extraConfigPrice = plansData?.extraConfigPrice || 50;
+  const extraAntigluschConfigPrice = plansData?.extraAntigluschConfigPrice || 50;
 
   const handlePay = (planId: SubscriptionPlan) => {
     createPayment.mutate(planId);
@@ -62,7 +72,7 @@ export function PaymentPlans() {
               <div className="flex-1">
                 <h4 className="font-semibold text-sm text-gray-900">{plan.name}</h4>
                 <p className="text-lg font-bold text-gray-900">{plan.price}₽</p>
-                <p className="text-xs text-gray-500">{perMonth} • {plan.configs} конфига</p>
+                <p className="text-xs text-gray-500">{perMonth} • {plan.configs} WG + 1 AntiGlusch</p>
               </div>
               <Button
                 onClick={() => handlePay(plan.id)}
@@ -80,13 +90,30 @@ export function PaymentPlans() {
       <Card>
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1">
-            <h4 className="font-semibold text-sm text-gray-900">Доп. конфиг</h4>
+            <h4 className="font-semibold text-sm text-gray-900">Доп. WG конфиг</h4>
             <p className="text-lg font-bold text-gray-900">{extraConfigPrice}₽/мес</p>
-            <p className="text-xs text-gray-500">+1 конфиг к подписке</p>
+            <p className="text-xs text-gray-500">+1 WireGuard конфиг к подписке</p>
           </div>
           <Button
-            onClick={() => createPayment.mutate('MONTHLY' as SubscriptionPlan)}
-            disabled={!subscription?.active || createPayment.isPending}
+            onClick={() => createExtraConfig.mutate()}
+            disabled={!subscription?.active || createExtraConfig.isPending}
+            className="shrink-0"
+          >
+            Добавить
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <h4 className="font-semibold text-sm text-gray-900">Доп. AntiGlusch конфиг</h4>
+            <p className="text-lg font-bold text-gray-900">{extraAntigluschConfigPrice}₽/мес</p>
+            <p className="text-xs text-gray-500">+1 AntiGlusch конфиг к подписке</p>
+          </div>
+          <Button
+            onClick={() => createExtraAntiglusch.mutate()}
+            disabled={!subscription?.active || createExtraAntiglusch.isPending}
             className="shrink-0"
           >
             Добавить

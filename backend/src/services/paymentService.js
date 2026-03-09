@@ -26,6 +26,7 @@ export const PLANS = {
 };
 
 export const EXTRA_CONFIG_PRICE = 50; // рублей в месяц
+export const EXTRA_ANTIGLUSCH_CONFIG_PRICE = 50; // рублей в месяц
 
 /**
  * Рассчитать дату окончания подписки
@@ -59,8 +60,17 @@ export async function hasActiveSubscription(userId) {
  */
 export async function getMaxConfigsForUser(userId) {
   const sub = await getActiveSubscription(userId);
-  if (!sub) return 0; // без подписки — 0 конфигов
+  if (!sub) return 0;
   return sub.maxConfigs + sub.extraConfigs;
+}
+
+/**
+ * Получить максимум AntiGlusch конфигов для пользователя
+ */
+export async function getMaxAntigluschConfigsForUser(userId) {
+  const sub = await getActiveSubscription(userId);
+  if (!sub) return 0;
+  return sub.maxAntigluschConfigs + sub.extraAntigluschConfigs;
 }
 
 /**
@@ -75,6 +85,8 @@ export async function getSubscriptionInfo(userId) {
       endDate: null,
       maxConfigs: 0,
       extraConfigs: 0,
+      maxAntigluschConfigs: 0,
+      extraAntigluschConfigs: 0,
     };
   }
   return {
@@ -83,6 +95,8 @@ export async function getSubscriptionInfo(userId) {
     endDate: sub.endDate.toISOString(),
     maxConfigs: sub.maxConfigs,
     extraConfigs: sub.extraConfigs,
+    maxAntigluschConfigs: sub.maxAntigluschConfigs,
+    extraAntigluschConfigs: sub.extraAntigluschConfigs,
   };
 }
 
@@ -117,5 +131,18 @@ export async function addExtraConfig(userId) {
   }
   return await databaseService.updateSubscription(sub.id, {
     extraConfigs: sub.extraConfigs + 1,
+  });
+}
+
+/**
+ * Добавить дополнительный AntiGlusch конфиг к подписке
+ */
+export async function addExtraAntigluschConfig(userId) {
+  const sub = await databaseService.getActiveSubscription(userId);
+  if (!sub) {
+    throw new Error('Нет активной подписки');
+  }
+  return await databaseService.updateSubscription(sub.id, {
+    extraAntigluschConfigs: sub.extraAntigluschConfigs + 1,
   });
 }

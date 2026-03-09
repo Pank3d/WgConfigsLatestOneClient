@@ -1,5 +1,6 @@
 import databaseService from './databaseService.js';
 import wireguardService from './wireguardService.js';
+import xrayService from './xrayService.js';
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // 5 минут
 
@@ -34,9 +35,25 @@ async function checkExpiredSubscriptions() {
           await databaseService.disableConfig(config.id);
         }
 
+        // Отключаем AntiGlusch конфиги
+        const agConfigs = await databaseService.getUserAntigluschConfigs(subscription.userId);
+        const enabledAgConfigs = agConfigs.filter((c) => c.enabled);
+
+        for (const agConfig of enabledAgConfigs) {
+          if (agConfig.xrayClientId && agConfig.xrayEmail) {
+            try {
+              await xrayService.disableClient(agConfig.xrayClientId, agConfig.xrayEmail);
+              console.log(`[CRON] Disabled Xray client ${agConfig.xrayClientId} for user ${subscription.userId}`);
+            } catch (err) {
+              console.error(`[CRON] Failed to disable Xray client ${agConfig.xrayClientId}:`, err.message);
+            }
+          }
+          await databaseService.disableAntigluschConfig(agConfig.id);
+        }
+
         // Помечаем подписку как EXPIRED
         await databaseService.updateSubscription(subscription.id, { status: 'EXPIRED' });
-        console.log(`[CRON] Expired subscription ${subscription.id} for user ${subscription.userId}, disabled ${enabledConfigs.length} configs`);
+        console.log(`[CRON] Expired subscription ${subscription.id} for user ${subscription.userId}, disabled ${enabledConfigs.length} WG + ${enabledAgConfigs.length} AG configs`);
       } catch (err) {
         console.error(`[CRON] Error processing subscription ${subscription.id}:`, err.message);
       }

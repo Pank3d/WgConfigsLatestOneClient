@@ -26,4 +26,19 @@ export const config = {
     secretKey: process.env.YOOKASSA_SECRET_KEY || '',
     returnUrl: process.env.YOOKASSA_RETURN_URL || 'https://wgshoppr.ru',
   },
+
+  featureFlags: {
+    freeAntiglusch: true, // TODO: убрать после тестов
+  },
+
+  xray: {
+    panelUrl: process.env.XRAY_PANEL_URL || 'http://xray-panel:9090',
+    panelUsername: process.env.XRAY_PANEL_USERNAME || 'admin',
+    panelPassword: process.env.XRAY_PANEL_PASSWORD || 'admin',
+    inboundId: 1,
+    serverAddress: '193.242.109.212',
+    serverPort: 8443,
+    realitySni: 'yandex.ru',
+    realityFingerprint: 'qq',
+  },
 };

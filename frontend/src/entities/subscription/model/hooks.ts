@@ -59,3 +59,23 @@ export function useCreateExtraConfigPaymentMutation() {
     },
   });
 }
+
+export function useCreateExtraAntigluschConfigPaymentMutation() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: () => subscriptionApi.createExtraAntigluschConfigPayment(),
+    onSuccess: (data) => {
+      if (data.confirmationUrl) {
+        window.location.href = data.confirmationUrl;
+      } else {
+        showToast('Платёжная система ещё не подключена', 'info');
+      }
+      queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
+    },
+    onError: () => {
+      showToast('Не удалось создать платёж', 'error');
+    },
+  });
+}

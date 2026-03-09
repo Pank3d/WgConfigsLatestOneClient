@@ -4,9 +4,11 @@ import { getOrCreateUser } from '../services/userService.js';
 import {
   PLANS,
   EXTRA_CONFIG_PRICE,
+  EXTRA_ANTIGLUSCH_CONFIG_PRICE,
   getSubscriptionInfo,
   activateSubscription,
   addExtraConfig,
+  addExtraAntigluschConfig,
 } from '../services/paymentService.js';
 import databaseService from '../services/databaseService.js';
 
@@ -20,6 +22,7 @@ router.get('/plans', (req, res) => {
   res.json({
     plans: Object.values(PLANS),
     extraConfigPrice: EXTRA_CONFIG_PRICE,
+    extraAntigluschConfigPrice: EXTRA_ANTIGLUSCH_CONFIG_PRICE,
   });
 });
 
@@ -91,6 +94,23 @@ router.post('/create', validateTelegramWebApp, async (req, res) => {
         amount: EXTRA_CONFIG_PRICE,
         description: 'Дополнительный конфиг',
       });
+    } else if (type === 'EXTRA_ANTIGLUSCH_CONFIG') {
+      const paymentId = `test_extra_ag_${Date.now()}`;
+
+      await databaseService.createPayment({
+        userId: user.id,
+        yookassaPaymentId: paymentId,
+        amount: EXTRA_ANTIGLUSCH_CONFIG_PRICE,
+        type: 'EXTRA_ANTIGLUSCH_CONFIG',
+        description: 'Дополнительный AntiGlusch конфиг',
+      });
+
+      res.json({
+        paymentId,
+        confirmationUrl: null,
+        amount: EXTRA_ANTIGLUSCH_CONFIG_PRICE,
+        description: 'Дополнительный AntiGlusch конфиг',
+      });
     } else {
       return res.status(400).json({ error: 'Неверный тип платежа' });
     }
@@ -135,6 +155,8 @@ router.post('/webhook', async (req, res) => {
         }
       } else if (payment.type === 'EXTRA_CONFIG') {
         await addExtraConfig(payment.userId);
+      } else if (payment.type === 'EXTRA_ANTIGLUSCH_CONFIG') {
+        await addExtraAntigluschConfig(payment.userId);
       }
     }
 
