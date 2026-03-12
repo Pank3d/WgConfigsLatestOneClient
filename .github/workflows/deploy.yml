@@ -106,7 +106,9 @@ jobs:
               nginx -t
               systemctl enable nginx
               systemctl start nginx
-              certbot renew --quiet
+              # Убиваем зависший certbot если есть
+              rm -f /var/lib/letsencrypt/.certbot.lock
+              certbot renew --quiet || true
             fi
 
             # Автообновление сертификата в cron
