@@ -27,6 +27,9 @@ async function createYookassaPayment({ amount, description, returnUrl, metadata,
       currency: 'RUB',
     },
     capture: true,
+    payment_method_data: {
+      type: 'sbp',
+    },
     confirmation: {
       type: 'redirect',
       return_url: returnUrl,
