@@ -20,6 +20,16 @@ export function usePlansQuery() {
   });
 }
 
+function openPaymentUrl(url: string) {
+  // В Telegram Mini App нужно использовать WebApp.openLink
+  const tg = (window as any).Telegram?.WebApp;
+  if (tg?.openLink) {
+    tg.openLink(url);
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
 export function useCreatePaymentMutation() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -28,9 +38,7 @@ export function useCreatePaymentMutation() {
     mutationFn: (plan: SubscriptionPlan) => subscriptionApi.createPayment(plan),
     onSuccess: (data) => {
       if (data.confirmationUrl) {
-        window.location.href = data.confirmationUrl;
-      } else {
-        showToast('Платёжная система ещё не подключена', 'info');
+        openPaymentUrl(data.confirmationUrl);
       }
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
     },
@@ -48,9 +56,7 @@ export function useCreateExtraConfigPaymentMutation() {
     mutationFn: () => subscriptionApi.createExtraConfigPayment(),
     onSuccess: (data) => {
       if (data.confirmationUrl) {
-        window.location.href = data.confirmationUrl;
-      } else {
-        showToast('Платёжная система ещё не подключена', 'info');
+        openPaymentUrl(data.confirmationUrl);
       }
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
     },
@@ -68,9 +74,7 @@ export function useCreateExtraAntigluschConfigPaymentMutation() {
     mutationFn: () => subscriptionApi.createExtraAntigluschConfigPayment(),
     onSuccess: (data) => {
       if (data.confirmationUrl) {
-        window.location.href = data.confirmationUrl;
-      } else {
-        showToast('Платёжная система ещё не подключена', 'info');
+        openPaymentUrl(data.confirmationUrl);
       }
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
     },

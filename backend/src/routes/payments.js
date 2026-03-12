@@ -1,4 +1,5 @@
 import express from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { validateTelegramWebApp } from '../middleware/telegramAuth.js';
 import { getOrCreateUser } from '../services/userService.js';
 import {
@@ -11,6 +12,48 @@ import {
   addExtraAntigluschConfig,
 } from '../services/paymentService.js';
 import databaseService from '../services/databaseService.js';
+import { config } from '../config/env.js';
+
+/**
+ * Создать платёж через ЮКасса API
+ */
+async function createYookassaPayment({ amount, description, returnUrl, metadata }) {
+  const { shopId, secretKey } = config.yookassa;
+  const idempotenceKey = uuidv4();
+
+  const body = JSON.stringify({
+    amount: {
+      value: amount.toFixed(2),
+      currency: 'RUB',
+    },
+    capture: true,
+    confirmation: {
+      type: 'redirect',
+      return_url: returnUrl,
+    },
+    description,
+    metadata,
+  });
+
+  const credentials = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+  const response = await fetch('https://api.yookassa.ru/v3/payments', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Idempotence-Key': idempotenceKey,
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`YooKassa API error ${response.status}: ${err}`);
+  }
+
+  return await response.json();
+}
 
 const router = express.Router();
 
@@ -50,66 +93,85 @@ router.post('/create', validateTelegramWebApp, async (req, res) => {
     const user = await getOrCreateUser(req.telegramUser);
     const { plan, type = 'SUBSCRIPTION' } = req.body;
 
+    const returnUrl = config.yookassa.returnUrl;
+
     if (type === 'SUBSCRIPTION') {
       if (!plan || !PLANS[plan]) {
         return res.status(400).json({ error: 'Неверный тариф' });
       }
 
       const amount = PLANS[plan].price;
+      const description = `Подписка WireGuard VPN — ${PLANS[plan].name}`;
 
-      // TODO: Интеграция с ЮКассой
-      // const payment = await yookassa.createPayment(...)
-      // Пока создаём заглушку
-      const paymentId = `test_${Date.now()}`;
+      const ykPayment = await createYookassaPayment({
+        amount,
+        description,
+        returnUrl,
+        metadata: { userId: user.id, type: 'SUBSCRIPTION', plan },
+      });
 
       await databaseService.createPayment({
         userId: user.id,
-        yookassaPaymentId: paymentId,
+        yookassaPaymentId: ykPayment.id,
         amount,
         type: 'SUBSCRIPTION',
         plan,
-        description: `Подписка WireGuard VPN — ${PLANS[plan].name}`,
+        description,
       });
 
       res.json({
-        paymentId,
-        confirmationUrl: null, // Будет URL от ЮКассы
+        paymentId: ykPayment.id,
+        confirmationUrl: ykPayment.confirmation.confirmation_url,
         amount,
-        description: `Подписка WireGuard VPN — ${PLANS[plan].name}`,
+        description,
       });
     } else if (type === 'EXTRA_CONFIG') {
-      const paymentId = `test_extra_${Date.now()}`;
+      const description = 'Дополнительный WireGuard конфиг';
+
+      const ykPayment = await createYookassaPayment({
+        amount: EXTRA_CONFIG_PRICE,
+        description,
+        returnUrl,
+        metadata: { userId: user.id, type: 'EXTRA_CONFIG' },
+      });
 
       await databaseService.createPayment({
         userId: user.id,
-        yookassaPaymentId: paymentId,
+        yookassaPaymentId: ykPayment.id,
         amount: EXTRA_CONFIG_PRICE,
         type: 'EXTRA_CONFIG',
-        description: 'Дополнительный конфиг',
+        description,
       });
 
       res.json({
-        paymentId,
-        confirmationUrl: null,
+        paymentId: ykPayment.id,
+        confirmationUrl: ykPayment.confirmation.confirmation_url,
         amount: EXTRA_CONFIG_PRICE,
-        description: 'Дополнительный конфиг',
+        description,
       });
     } else if (type === 'EXTRA_ANTIGLUSCH_CONFIG') {
-      const paymentId = `test_extra_ag_${Date.now()}`;
+      const description = 'Дополнительный AntiGlusch конфиг';
+
+      const ykPayment = await createYookassaPayment({
+        amount: EXTRA_ANTIGLUSCH_CONFIG_PRICE,
+        description,
+        returnUrl,
+        metadata: { userId: user.id, type: 'EXTRA_ANTIGLUSCH_CONFIG' },
+      });
 
       await databaseService.createPayment({
         userId: user.id,
-        yookassaPaymentId: paymentId,
+        yookassaPaymentId: ykPayment.id,
         amount: EXTRA_ANTIGLUSCH_CONFIG_PRICE,
         type: 'EXTRA_ANTIGLUSCH_CONFIG',
-        description: 'Дополнительный AntiGlusch конфиг',
+        description,
       });
 
       res.json({
-        paymentId,
-        confirmationUrl: null,
+        paymentId: ykPayment.id,
+        confirmationUrl: ykPayment.confirmation.confirmation_url,
         amount: EXTRA_ANTIGLUSCH_CONFIG_PRICE,
-        description: 'Дополнительный AntiGlusch конфиг',
+        description,
       });
     } else {
       return res.status(400).json({ error: 'Неверный тип платежа' });
@@ -140,24 +202,18 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).json({ ok: true });
       }
 
-      // Обновляем статус платежа
-      await databaseService.updatePaymentStatus(yookassaPaymentId, 'SUCCEEDED');
-
       // Активируем подписку или добавляем конфиг
       if (payment.type === 'SUBSCRIPTION' && payment.plan) {
-        const sub = await activateSubscription(payment.userId, payment.plan);
-        await databaseService.updatePaymentStatus(yookassaPaymentId, 'SUCCEEDED');
-        if (sub) {
-          await databaseService.createPayment({
-            ...payment,
-            subscriptionId: sub.id,
-          }).catch(() => {}); // Ignore if already linked
-        }
+        await activateSubscription(payment.userId, payment.plan);
       } else if (payment.type === 'EXTRA_CONFIG') {
         await addExtraConfig(payment.userId);
       } else if (payment.type === 'EXTRA_ANTIGLUSCH_CONFIG') {
         await addExtraAntigluschConfig(payment.userId);
       }
+
+      // Обновляем статус платежа
+      await databaseService.updatePaymentStatus(yookassaPaymentId, 'SUCCEEDED');
+      console.log(`[Webhook] Payment ${yookassaPaymentId} succeeded, type=${payment.type}`);
     }
 
     res.status(200).json({ ok: true });
