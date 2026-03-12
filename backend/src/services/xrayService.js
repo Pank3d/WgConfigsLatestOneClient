@@ -133,7 +133,15 @@ class XrayService {
     }
 
     // streamSettings содержит Reality настройки
-    const streamSettings = JSON.parse(inbound.streamSettings || '{}');
+    let streamSettings;
+    try {
+      streamSettings = JSON.parse(inbound.streamSettings || '{}');
+    } catch {
+      streamSettings = {};
+    }
+
+    console.log(`[XrayService] Inbound id=${inbound.id}, security=${streamSettings.security}, keys: ${JSON.stringify(Object.keys(streamSettings))}`);
+
     const realitySettings = streamSettings?.realitySettings;
 
     if (realitySettings) {
@@ -164,10 +172,23 @@ class XrayService {
         console.log(`[XrayService] Updated inbound with new Reality keys`);
       }
 
-      console.log(`[XrayService] Reality publicKey: ${this.realityPublicKey.substring(0, 10)}...`);
-      console.log(`[XrayService] Reality shortId: ${this.realityShortId}`);
+      console.log(`[XrayService] Reality publicKey: ${this.realityPublicKey.substring(0, 10)}..., shortId: ${this.realityShortId}`);
     } else {
-      console.warn('[XrayService] No Reality settings found in inbound');
+      // realitySettings нет — inbound существует но не Reality. Удаляем и пересоздаём.
+      console.warn(`[XrayService] No Reality settings found in inbound id=${inbound.id}. streamSettings.security=${streamSettings.security}. Recreating...`);
+      console.warn(`[XrayService] Full streamSettings: ${JSON.stringify(streamSettings)}`);
+
+      await this.request('post', `/panel/api/inbounds/del/${inbound.id}`, {});
+      inbound = await this.createInbound();
+      // После создания ключи уже загружены через createInbound → loadInboundSettings рекурсивно не нужен
+      // Перечитаем streamSettings нового inbound
+      const newStream = JSON.parse(inbound.streamSettings || '{}');
+      const newReality = newStream?.realitySettings;
+      if (newReality) {
+        this.realityPublicKey = (newReality.settings || {}).publicKey || newReality.publicKey || '';
+        this.realityShortId = (newReality.shortIds && newReality.shortIds[0]) || '';
+        console.log(`[XrayService] Recreated inbound, pbk=${this.realityPublicKey.substring(0, 10)}..., sid=${this.realityShortId}`);
+      }
     }
 
     return inbound;

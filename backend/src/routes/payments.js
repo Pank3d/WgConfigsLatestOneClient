@@ -17,11 +17,11 @@ import { config } from '../config/env.js';
 /**
  * Создать платёж через ЮКасса API
  */
-async function createYookassaPayment({ amount, description, returnUrl, metadata }) {
+async function createYookassaPayment({ amount, description, returnUrl, metadata, customerEmail }) {
   const { shopId, secretKey } = config.yookassa;
   const idempotenceKey = uuidv4();
 
-  const body = JSON.stringify({
+  const payment = {
     amount: {
       value: amount.toFixed(2),
       currency: 'RUB',
@@ -33,7 +33,27 @@ async function createYookassaPayment({ amount, description, returnUrl, metadata 
     },
     description,
     metadata,
-  });
+    receipt: {
+      customer: {
+        email: customerEmail || 'noreply@wgshoppr.ru',
+      },
+      items: [
+        {
+          description,
+          quantity: '1.00',
+          amount: {
+            value: amount.toFixed(2),
+            currency: 'RUB',
+          },
+          vat_code: 1, // без НДС
+          payment_mode: 'full_payment',
+          payment_subject: 'service',
+        },
+      ],
+    },
+  };
+
+  const body = JSON.stringify(payment);
 
   const credentials = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
 
